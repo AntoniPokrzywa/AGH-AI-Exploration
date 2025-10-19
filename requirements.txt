@@ -1,0 +1,6 @@
+langgraph
+playwright
+asyncio
+python-dotenv
+beautifulsoup4
+gradio
