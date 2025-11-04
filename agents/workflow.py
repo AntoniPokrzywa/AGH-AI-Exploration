@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, END, START
 from agents.nodes.facebook_scrapers import facebook_login_node, facebook_scrape_node
 from agents.nodes.manager import manager_node
-from agents.state import InputState, OutputState, State
+from agents.state import State
 from langgraph.checkpoint.memory import MemorySaver
 from agents.tools import tool_node
 
