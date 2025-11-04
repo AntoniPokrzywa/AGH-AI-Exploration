@@ -1,9 +1,16 @@
 
+import sys
+from pathlib import Path
+base_dir = Path(__file__).resolve().parent.parent.parent
+sys.path.append(str(base_dir))
+
 import os
 import logging
 from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright
-from utils import clean_html
+from agents.utils import clean_html, ocr
+
+
 
 load_dotenv()
 
@@ -11,6 +18,11 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(message)s",
 )
+
+
+# Add base dir to sys.path for imports if needed
+
+
 
 FB_PROFILE_ABOUT = "https://www.facebook.com/profile.php?id=100009725953759&sk=about"
 FB_LOGIN_URL = "https://www.facebook.com/login"
@@ -28,7 +40,7 @@ def facebook_login_node():
     with sync_playwright() as p:
         ctx = p.chromium.launch_persistent_context(
             user_data_dir=user_data_dir,
-            headless=False,
+            headless=True,
             viewport={"width": 1280, "height": 800},
             args=[
                 "--no-sandbox",
@@ -50,10 +62,13 @@ def facebook_login_node():
 
         # Close cookies banner
         # TODO add fallback if doesnt show
-        btn = page.locator('[aria-label="Allow all cookies"]:not([aria-disabled="true"])').first
-        btn.wait_for(state="visible", timeout=7000)
-        btn.click(force=True)
-        page.wait_for_timeout(1500)
+        try:
+            btn = page.locator('[aria-label="Allow all cookies"]:not([aria-disabled="true"])').first
+            btn.wait_for(state="visible", timeout=7000)
+            btn.click(force=True)
+            page.wait_for_timeout(1500)
+        except Exception:
+            logging.info("Cookies banner not found or already handled.")
 
         logging.info("Submitting login form...")
         page.locator('input[name="email"], #email').first.fill(email)
@@ -76,7 +91,7 @@ def facebook_scrape_node():
     with sync_playwright() as p:
         ctx = p.chromium.launch_persistent_context(
             user_data_dir=user_data_dir,
-            headless=False,
+            headless=True,
             viewport={"width": 1280, "height": 800},
             args=[
                 "--no-sandbox",
@@ -88,18 +103,22 @@ def facebook_scrape_node():
         page = ctx.new_page()
         page.goto(FB_PROFILE_ABOUT, wait_until="domcontentloaded")
         page.wait_for_timeout(2000)
-        for _ in range(10):
-            page.mouse.wheel(0, 1500)
-            page.wait_for_timeout(300)
+        for _ in range(6):
+            from datetime import datetime
+            page.screenshot(path=f"screens/debug_fb_scroll_{datetime.now().timestamp()}.png")
+            page.mouse.wheel(0, 500)
+            page.wait_for_timeout(2000)
         html = page.content()
         logging.info("Scrape completed; cleaning and saving output...")
         with open("fb_profile_about.html", "w", encoding="utf-8") as f:
             f.write(clean_html(html))
+        ocr_text = ocr("screens/")
         ctx.close()
+        return ocr_text, clean_html(html)
+
 
 
     
 if __name__ == "__main__":
-    facebook_login_node()
-    facebook_scrape_node()
+    print(ocr("screens/"))
 
