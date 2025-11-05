@@ -2,10 +2,11 @@ from langchain_core.tools import tool
 from langgraph.prebuilt import ToolNode
 
 @tool
-def facebook_parser_tool():
+def facebook_parser_tool(url: str):
     """Parses a Facebook profile and returns structured information about the user."""
     
-    return """
+    return f"""
+    
     Name: Miś Puchatek
     Username: @MiodowyMisKrakow
     Bio: "A bear of very little brain, but a very big appetite. Just looking for 'Małe Co Nieco'. 🍯"
@@ -15,10 +16,12 @@ def facebook_parser_tool():
     Sport Clubs (Follows): KS Cracovia (Likes the stripes!)
     Hobbies: Napping, Visiting friends, Tree climbing (for specific reasons), Composing "Mruczanki" (Hums)
     Liked Pages: "Bar Mleczny 'Pod Baryłką'", "Pasieka 'Złoty Ul'", "Krakowskie Błonia (Perfect for Naps)"
+    recent posts: {url}
+    
     """
 
 @tool
-def instagram_parser_tool():
+def instagram_parser_tool(url: str):
     """Parses a Instagram profile and returns structured information about the user."""
 
     return """
@@ -35,7 +38,7 @@ def instagram_parser_tool():
     """
 
 @tool
-def linkedin_parser_tool():
+def linkedin_parser_tool(url: str):
     """Parses a LinkedIn profile and returns structured information about the user."""
 
     return """
