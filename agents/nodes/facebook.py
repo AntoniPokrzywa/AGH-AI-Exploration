@@ -106,11 +106,11 @@ def facebook_scrape(url):
             page.wait_for_timeout(2000)
         html = page.content()
         logging.info("Scrape completed; cleaning and saving output...")
-        ocr_text = ocr("screens/")
+        ocr_text = ocr(str(base_dir / "data" / "screens"))
         cleaned_html = clean_html(html)
 
-        shutil.rmtree("screens/")
-        os.makedirs("screens/", exist_ok=True)
+        shutil.rmtree(str(base_dir / "data" / "screens"))
+        os.makedirs(str(base_dir / "data" / "screens"), exist_ok=True)
         ctx.close()
         return { "status": "success", "messages": {"ocr": ocr_text, "html": cleaned_html} }
 
