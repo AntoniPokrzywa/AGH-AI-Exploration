@@ -2,15 +2,14 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from dotenv import load_dotenv
 from agents.state import State
 from langchain_core.messages import SystemMessage
-llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
 from agents.tools import tools
 
-
-model_with_tools = llm.bind_tools(tools)
 load_dotenv()
+llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
+model_with_tools = llm.bind_tools(tools)
 
 def manager_node(state: State):
-    system_prompt = ''' 
+    system_prompt = '''
     You are an intelligent Client Data Manager Agent responsible for managing the client onboarding and data collection process.
     Your task is to communicate with a client in a natural, friendly way and gather enough information to build a complete client profile using available scraping tools.
 

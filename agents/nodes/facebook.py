@@ -1,46 +1,46 @@
-
+import os
 import sys
 from pathlib import Path
 base_dir = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(base_dir))
 
-import os
+
 import logging
 from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright
+import shutil
+from datetime import datetime
 from agents.utils import clean_html, ocr
-
+from langchain_core.tools import tool
+from langgraph.prebuilt import ToolNode
+from langchain_google_genai import ChatGoogleGenerativeAI
+from agents.state import ScraperState
+from langchain_core.messages import SystemMessage
 
 
 load_dotenv()
+llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0)
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(message)s",
 )
 
-
-# Add base dir to sys.path for imports if needed
-
-
-
-FB_PROFILE_ABOUT = "https://www.facebook.com/profile.php?id=100009725953759&sk=about"
-FB_LOGIN_URL = "https://www.facebook.com/login"
-user_data_dir = "./data/fb-data"
-
-
-# Make it as a tool or node ( langgraph style )
-# We can also think about combining both login and scrape into one node
-# And making them async
-# And improving error handling / code in general
-def facebook_login_node():
+@tool
+def facebook_login():
+    """Logs into Facebook using credentials from environment variables."""
     email = os.getenv("FB_EMAIL")
     password = os.getenv("FB_PASSWORD")
+    fb_login_url = os.getenv("FB_LOGIN_URL", "https://www.facebook.com/login")
+
+    if not email or not password:
+        logging.error("Missing FB_EMAIL or FB_PASSWORD env vars")
+        return { "status": "error", "message": "Missing FB_EMAIL or FB_PASSWORD env vars"  }
 
     with sync_playwright() as p:
         ctx = p.chromium.launch_persistent_context(
-            user_data_dir=user_data_dir,
-            headless=True,
+            user_data_dir= base_dir / "data" / "fb-data",
+            headless=False,
             viewport={"width": 1280, "height": 800},
             args=[
                 "--no-sandbox",
@@ -50,18 +50,15 @@ def facebook_login_node():
             ],
         )
         page = ctx.pages[0] if ctx.pages else ctx.new_page()
-        page.goto(FB_LOGIN_URL, wait_until="domcontentloaded")
-        if not email or not password:
-            raise RuntimeError("Missing FB_EMAIL or FB_PASSWORD env vars")
+        page.goto(fb_login_url, wait_until="domcontentloaded")
+        
 
         # If the login inputs are not visible, assume already logged in
         if page.locator('input[name="email"], #email').count() == 0:
-            logging.info("Login form not found; assuming already logged in.")
+            logging.info("Login form not found; Assuming already logged in.")
             ctx.close()
-            return
+            return { "status": "success", "message": "Login form not found; Assuming already logged in."  }
 
-        # Close cookies banner
-        # TODO add fallback if doesnt show
         try:
             btn = page.locator('[aria-label="Allow all cookies"]:not([aria-disabled="true"])').first
             btn.wait_for(state="visible", timeout=7000)
@@ -77,20 +74,20 @@ def facebook_login_node():
             page.locator('button[name="login"], [data-testid="royal_login_button"], #loginbutton').first.click()
         except Exception:
             page.keyboard.press("Enter")
-
-        # Give it a moment to complete redirects
         try:
             page.wait_for_load_state("networkidle", timeout=10000)
         except Exception:
             pass
-        logging.info("Login attempt completed; current URL: %s", page.url)
+        logging.info("Login attempt completed")
         ctx.close()
-
-
-def facebook_scrape_node():
+        return { "status": "success", "message": "Login attempt completed." }
+    
+@tool
+def facebook_scrape(url):
+    """Scrapes Facebook profile and returns parsed OCR string and HTML."""
     with sync_playwright() as p:
         ctx = p.chromium.launch_persistent_context(
-            user_data_dir=user_data_dir,
+            user_data_dir=base_dir / "data" / "fb-data",
             headless=True,
             viewport={"width": 1280, "height": 800},
             args=[
@@ -101,24 +98,41 @@ def facebook_scrape_node():
             ],
         )
         page = ctx.new_page()
-        page.goto(FB_PROFILE_ABOUT, wait_until="domcontentloaded")
+        page.goto(url, wait_until="domcontentloaded")
         page.wait_for_timeout(2000)
         for _ in range(6):
-            from datetime import datetime
-            page.screenshot(path=f"screens/debug_fb_scroll_{datetime.now().timestamp()}.png")
+            page.screenshot(path=base_dir / "data" / "screens" / f"debug_fb_scroll_{datetime.now().timestamp()}.png")
             page.mouse.wheel(0, 500)
             page.wait_for_timeout(2000)
         html = page.content()
         logging.info("Scrape completed; cleaning and saving output...")
-        with open("fb_profile_about.html", "w", encoding="utf-8") as f:
-            f.write(clean_html(html))
         ocr_text = ocr("screens/")
+        cleaned_html = clean_html(html)
+
+        shutil.rmtree("screens/")
+        os.makedirs("screens/", exist_ok=True)
         ctx.close()
-        return ocr_text, clean_html(html)
+        return { "status": "success", "messages": {"ocr": ocr_text, "html": cleaned_html} }
+
+
+facebook_tools = [facebook_login, facebook_scrape]
+facebook_tool_node = ToolNode(facebook_tools)
+model_with_tools = llm.bind_tools(facebook_tools)
+
+def facebook_node(state: ScraperState):
+    system_prompt = """
+    You are a Facebook Data Scraper Agent. Your task is to scrape data from a given Facebook profile URL.
+    Use the facebook_login tool ALWAYS to ensure you are logged in
+    ONLY after ensuring you are logged in use facebook_scrape tool to scrape the profile data.
+    Return the scraped data in a structured format."""
+
+    messages = [SystemMessage(content=system_prompt)] + [state["url"]] + state["messages"]
+    response = model_with_tools.invoke(messages)
+    return {"messages": [response]}
 
 
 
-    
+  
+
 if __name__ == "__main__":
-    print(ocr("screens/"))
-
+    facebook_login()
