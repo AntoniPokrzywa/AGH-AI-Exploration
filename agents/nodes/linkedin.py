@@ -39,7 +39,7 @@ def linkedin_login_node():
         page = ctx.new_page()
         url = os.getenv("LINKEDIN_LOGIN_URL")
         page.goto(url, wait_until="domcontentloaded")
-        page.wait_for_timeout(2000)
+        page.wait_for_timeout(20000)
 
         if page.locator('input[id="username"], #email').count() == 0:
             logging.info("Login form not found; Assuming already logged in.")
@@ -88,8 +88,8 @@ def lindkedin_scrape(url):
         shutil.rmtree(str(base_dir / "data" / "screens"))
         os.makedirs(str(base_dir / "data" / "screens"), exist_ok=True)
         ctx.close()
-        return { "status": "success"} #"messages": {"ocr": ocr_text, "html": cleaned_html} }
+        return { "status": "success", "messages": {"ocr": ocr_text, "html": cleaned_html} }
 
 linkedin_login_node()
-lindkedin_scrape("https://www.linkedin.com/in/antonipokrzywa/")
+lindkedin_scrape("https://www.linkedin.com/in/bukaszlilski/")
 
