@@ -107,6 +107,8 @@ def facebook_scrape(url):
         html = page.content()
         logging.info("Scrape completed; cleaning and saving output...")
         ocr_text = ocr(str(base_dir / "data" / "screens"))
+        with open(base_dir / "data" / "facebook_scrape.html", "w", encoding="utf-8") as f:
+            f.write(html)
         cleaned_html = clean_html(html)
 
         shutil.rmtree(str(base_dir / "data" / "screens"))
