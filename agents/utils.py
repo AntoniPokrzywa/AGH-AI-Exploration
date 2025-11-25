@@ -16,18 +16,17 @@ def clean_html(html: str) -> str:
     text = text.replace("\n", "")
     return text.strip()
 
-# def ocr(image_foler_path: str):
-#     output=""
-#     for image_file in os.listdir(image_foler_path):
-#         image_path = os.path.join(image_foler_path, image_file)
-#         output+=pytesseract.image_to_string(Image.open(image_path))#, lang="pol")  # możesz zmienić na "eng" itd.
-#     return output
+def get_links(html: str) -> list:
+    soup = BeautifulSoup(html, 'html.parser')
+    hrefs = [a.get('href') for a in soup.find_all('a', href=True)]
+    return hrefs
+
 
 def encode_image(image_path):
-        if not os.path.exists(image_path):
-            raise FileNotFoundError(f"Image not found: {image_path}")
-        with open(image_path, "rb") as f:
-            return base64.b64encode(f.read()).decode('utf-8')
+    if not os.path.exists(image_path):
+        raise FileNotFoundError(f"Image not found: {image_path}")
+    with open(image_path, "rb") as f:
+        return base64.b64encode(f.read()).decode('utf-8')
         
 def ocr(image_folder_path: str) -> None:
     load_dotenv()
