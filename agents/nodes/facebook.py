@@ -29,8 +29,8 @@ logging.basicConfig(
 @tool
 def facebook_login():
     """Logs into Facebook using credentials from environment variables."""
-    email = os.getenv("FB_EMAIL")
-    password = os.getenv("FB_PASSWORD")
+    email = os.getenv("EMAIL")
+    password = os.getenv("PASSWORD")
     fb_login_url = os.getenv("FB_LOGIN_URL", "https://www.facebook.com/login")
 
     if not email or not password:
@@ -88,7 +88,7 @@ def facebook_scrape(url):
     with sync_playwright() as p:
         ctx = p.chromium.launch_persistent_context(
             user_data_dir=base_dir / "data" / "fb-data",
-            headless=True,
+            headless=False,
             viewport={"width": 1280, "height": 800},
             args=[
                 "--no-sandbox",

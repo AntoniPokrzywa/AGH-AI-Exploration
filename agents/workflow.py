@@ -6,6 +6,7 @@ sys.path.append(str(base_dir))
 
 from agents.nodes.manager import manager_node
 from agents.nodes.facebook import facebook_node, facebook_tool_node
+from agents.nodes.instagram import instagram_node, instagram_tool_node
 from agents.state import State, ScraperState
 from langgraph.checkpoint.memory import MemorySaver
 #from agents.tools import tool_node
@@ -50,7 +51,27 @@ def facebook_parser_tool(url: str):
     result = fb_compiled_graph.invoke({"url": url})
     return result["messages"]
 
-tool_node = ToolNode([facebook_parser_tool])
+
+
+@tool
+def instagram_parser_tool(url: str):
+    """Parses an Instagram profile and returns structured information about the user."""
+    ig_graph_builder = StateGraph(ScraperState)
+    ig_graph_builder.add_node("instagram_node", instagram_node)
+    ig_graph_builder.add_node("tool_node", instagram_tool_node)
+    ig_graph_builder.add_conditional_edges(
+        "instagram_node",
+        should_continue,
+        ["tool_node", END]
+    )
+    ig_graph_builder.add_edge("tool_node", "instagram_node")
+    ig_graph_builder.set_entry_point("instagram_node")
+    ig_compiled_graph = ig_graph_builder.compile()
+    result = ig_compiled_graph.invoke({"url": url})
+    return result["messages"]
+
+tool_node = ToolNode([facebook_parser_tool, instagram_parser_tool])
+
 
 # Main graph workflow
 memory = MemorySaver()

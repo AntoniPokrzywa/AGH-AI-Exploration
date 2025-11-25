@@ -28,8 +28,9 @@ def encode_image(image_path):
     with open(image_path, "rb") as f:
         return base64.b64encode(f.read()).decode('utf-8')
         
-def ocr(image_folder_path: str) -> None:
+def ocr(image_folder_path: str) -> str:
     load_dotenv()
+    ocr_result: str = ""
 
     api_key = os.environ.get("MISTRAL_API_KEY")
     if not api_key:
@@ -68,16 +69,18 @@ def ocr(image_folder_path: str) -> None:
                 messages=messages
             )
             
-            with open(f"result_{image_file}.md", "w", encoding="utf-8") as f:
-                if hasattr(chat_response, "pages") and chat_response.pages:
-                    for page in chat_response.pages:
-                        f.write(f"# Strona {page.index}\n\n")
-                        f.write(page.markdown)
-                        f.write("\n\n")
-                elif hasattr(chat_response, "choices"):
-                    f.write(chat_response.choices[0].message.content)
-                else:
-                    f.write(str(chat_response)[8:])
+
+            if hasattr(chat_response, "pages") and chat_response.pages:
+                for page in chat_response.pages:
+                    ocr_result += f"# Strona {page.index}\n\n"
+                    ocr_result += page.markdown
+                    ocr_result += "\n\n"
+            elif hasattr(chat_response, "choices"):
+                ocr_result += chat_response.choices[0].message.content
+            else:
+                ocr_result += str(chat_response)[8:]
                     
         except Exception as e:
             print(f"Error: {type(e).__name__}: {e}")
+
+    return ocr_result
