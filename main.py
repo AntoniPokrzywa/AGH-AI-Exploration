@@ -5,15 +5,26 @@ from langchain_core.messages import HumanMessage, AIMessage
 
 config = {"configurable": {"thread_id": "1"}}
 
-def respond(user_input: str, history):
-    #history.append({"role": "user", "content": user_input})
-    result = compiled_graph.invoke({
-        "messages": [HumanMessage(content=user_input)] 
-    }, config=config)
+def respond(user_input: str, history: List[List[str]]):
+    # Convert Gradio history → LangChain messages
+    messages = []
+    for user, assistant in history:
+        messages.append(HumanMessage(content=user))
+        messages.append(AIMessage(content=assistant))
 
-    return result["messages"][-1].content
-    # history.append({"role": "assistant", "content": assistant_msg.content})
-    # return history, history
+    # Add the new user message
+    messages.append(HumanMessage(content=user_input))
+
+    # Invoke LangGraph with *full* message list
+    result = compiled_graph.invoke(
+        {"messages": messages},
+        config=config
+    )
+
+    # Assistant response is last message in the list
+    assistant_reply = result["messages"][-1].content
+
+    return assistant_reply
 
 
 demo = gr.ChatInterface(fn=respond)

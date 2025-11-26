@@ -4,7 +4,6 @@ from langgraph.prebuilt import ToolNode
 @tool
 def facebook_parser_tool(url: str):
     """Parses a Facebook profile and returns structured information about the user."""
-    
     return f"""
     
     Name: Miś Puchatek
