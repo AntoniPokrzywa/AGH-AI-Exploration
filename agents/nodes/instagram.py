@@ -101,7 +101,7 @@ def instagram_scrape(url):
         page = ctx.new_page()
         page.goto(url, wait_until="domcontentloaded")
         page.wait_for_timeout(2000)
-        for _ in range(3):
+        for _ in range(4):
             page.screenshot(path=base_dir / "data" / "screens" / f"debug_ig_scroll_{datetime.now().timestamp()}.png")
             page.mouse.wheel(0, 500)
             page.wait_for_timeout(2000)

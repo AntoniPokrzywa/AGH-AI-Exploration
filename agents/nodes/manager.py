@@ -30,18 +30,16 @@ def manager_node(state: State):
       >instagram_parser_tool(URL)
       >linkedin_parser_tool(URL)
      -Each tool returns structured data about the client.
-     -Please don't remove any information even if it seems redundant.
+     -Please keep all the information that you gathered, the more information the better but parse it so it's easier to read
+     -Remebember to pass data only about the client, not about their connections or friends.
 
-    Reasoning and Context Awareness:
-
-    -If you detect missing or insufficient data for the proposal, explain what is missing and ask the client for additional URLs or clarifications.    
+    Reasoning and Context Awareness: 
     -If the client refuses to provide more, respect their decision and proceed with what you have.
 
     Final Output:
-
-    -After gathering enough data, confirm the final dataset with the client.
     -VERY IMPORTANT:
      When and ONLY when you have gathered enough information for the Email Agent,
+     
      you MUST send a final message containing a JSON object:
      
      {"ready_for_email": true}.
@@ -60,7 +58,7 @@ def manager_node(state: State):
     User: of course here's instagram URL: [link]
     Agent: Would you also like to add Facebook profile for even more context?
     User: No, that’s enough.
-    Agent: Understood. Let me compile his/her profile and confirm what I have so far...
+    Agent: Understood. Let me compile his/her profile and send it to email agent
 
     '''
 

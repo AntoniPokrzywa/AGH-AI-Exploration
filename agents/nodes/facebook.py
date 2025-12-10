@@ -100,7 +100,7 @@ def facebook_scrape(url):
         page = ctx.new_page()
         page.goto(url, wait_until="domcontentloaded")
         page.wait_for_timeout(2000)
-        for _ in range(6):
+        for _ in range(4):
             page.screenshot(path=base_dir / "data" / "screens" / f"debug_fb_scroll_{datetime.now().timestamp()}.png")
             page.mouse.wheel(0, 500)
             page.wait_for_timeout(2000)
@@ -126,7 +126,8 @@ def facebook_node(state: ScraperState):
     You are a Facebook Data Scraper Agent. Your task is to scrape data from a given Facebook profile URL.
     Use the facebook_login tool ALWAYS to ensure you are logged in
     ONLY after ensuring you are logged in use facebook_scrape tool to scrape the profile data.
-    Return the scraped data in a structured format."""
+    Return the scraped data in a structured format.
+    Remember to ALWAYS return entire data you collected"""
 
     messages = [SystemMessage(content=system_prompt)] + [state["url"]] + state["messages"]
     response = model_with_tools.invoke(messages)
